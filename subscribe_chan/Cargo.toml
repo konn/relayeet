@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Hiromi ISHII <konn.jinro@gmail.com>"]
 
 [dependencies]
+"crossbeam-channel" = "0.2.4"
