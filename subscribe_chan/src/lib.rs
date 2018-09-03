@@ -1,5 +1,6 @@
 extern crate crossbeam_channel;
 use crossbeam_channel as chan;
+use std::iter::FusedIterator;
 use std::sync::{Arc, Mutex, Weak};
 
 #[derive(Debug)]
@@ -19,6 +20,7 @@ pub struct Receiver<T> {
     _sender: Arc<chan::Sender<T>>,
 }
 
+#[inline]
 pub fn channel<T: Clone>() -> (Sender<T>, Subscriber<T>) {
     let senders = Arc::new(Mutex::new(vec![]));
     (
@@ -52,10 +54,12 @@ impl<T> Subscriber<T> {
 }
 
 impl<T> Receiver<T> {
+    #[inline]
     pub fn recv(&self) -> Option<T> {
         self.receiver.recv()
     }
 
+    #[inline]
     pub fn try_recv(&self) -> Option<T> {
         self.receiver.try_recv()
     }
@@ -89,3 +93,13 @@ mod tests {
         assert_eq!(r2.try_recv(), None);
     }
 }
+
+impl<T> Iterator for Receiver<T> {
+    type Item = T;
+    #[inline]
+    fn next(&mut self) -> Option<T> {
+        self.recv()
+    }
+}
+
+impl<T> FusedIterator for Receiver<T> {}
