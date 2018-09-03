@@ -1,0 +1,6 @@
+[package]
+name = "relayeet-client"
+version = "0.1.0"
+authors = ["Hiromi ISHII <konn.jinro@gmail.com>"]
+
+[dependencies]
