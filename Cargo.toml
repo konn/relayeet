@@ -2,4 +2,5 @@
 members = [
     "relayeet-server",
     "relayeet-client",
+    "subscribe_chan",
 ]
