@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric, ExtendedDefaultRules, LambdaCase      #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, TypeApplications #-}
+{-# LANGUAGE TypeOperators                                        #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 import Relayeet
@@ -15,7 +16,7 @@ import           Data.Maybe
 import           Data.Text                (Text)
 import qualified Data.Text.Encoding       as T
 import           GHC.Generics             (Generic)
-import           Network.HTTP.Client      hiding (Proxy)
+import           Network.HTTP.Client      hiding (Proxy, queryString)
 import           Network.HTTP.Client.TLS
 import           Network.Wai.Handler.Warp
 import           Servant                  hiding (header)
@@ -115,8 +116,9 @@ server Env{..} cfg@Config{..} = run oauthCallbackPort $ serve @OAuthCallbackAPI 
       man <- liftIO $ newManager tlsManagerSettings
       accToks <- getTokenCredential (configToOAuth cfg) cred' man
       liftIO $ atomically $ TMap.insert accToks user accTokDic
-      return NoContent
-    body _ _ = throwError err401
+      return "Ok!"
+    body _ _ =
+      throwError err401 { errBody = "Something went wrong..." }
 
 lookupTMap' :: (Eq k, Hashable k) => k -> TMap.Map k b -> STM b
 lookupTMap' key dic = TMap.lookup key dic >>= \case

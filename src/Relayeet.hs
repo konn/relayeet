@@ -92,7 +92,7 @@ type OAuthCallbackAPI =
      "oauth_callback"
   :> QueryParam "oauth_token" Token
   :> QueryParam "oauth_verifier" Token
-  :> Post '[PlainText] NoContent
+  :> Get '[PlainText] T.Text
 
 data OAuthVerification = OAuthVerification
 
