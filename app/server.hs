@@ -12,7 +12,9 @@ import           Control.Monad.Reader
 import           Data.Aeson
 import qualified Data.Aeson                       as Aeson
 import           Data.Aeson.Text
+import qualified Data.ByteString.Lazy.Char8       as LBS
 import qualified Data.Text.Lazy.Encoding          as LT
+import           Network.HTTP.Types.Status
 import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant.Server.Experimental.Auth
@@ -60,14 +62,19 @@ readerToHandler e act = do
     Right a  -> return a
     Left err -> throwError err
 
-server :: Env -> Server API
+server :: Env -> Server (API :<|> Raw)
 server env =
-  hoistServerWithContext @API @'[AuthHandler Request Bearer] Proxy Proxy (readerToHandler env) $
-  crcApp :<|> aaaApp :<|> streamApp
+  hoistServerWithContext @(API :<|> Raw) @'[AuthHandler Request Bearer] Proxy Proxy (readerToHandler env) $
+  (crcApp :<|> aaaApp :<|> streamApp) :<|> notFound
 
 data Env = Env { config   :: Config
                , producer :: TChan (Maybe Value)
                }
+
+notFound :: Tagged (ReaderT Env (ExceptT ServantErr IO)) Application
+notFound = Tagged $ \req sendResponse -> do
+  liftIO $ putStrLn $ "Not Found: " ++ show req
+  sendResponse $ responseLBS status404 [] $ "Not Found: " <> LBS.pack (show $ rawPathInfo req)
 
 main :: IO ()
 main = do
@@ -76,4 +83,4 @@ main = do
   vcache   <- sharedVCache
   let env = Env { .. }
       cfg = bearerHandler vcache :. EmptyContext
-  run port $ serveWithContext @API Proxy cfg (server env)
+  run port $ serveWithContext @(API :<|> Raw) Proxy cfg (server env)
