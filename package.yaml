@@ -24,34 +24,19 @@ description:         Please see the README on GitHub at <https://github.com/konn
 
 dependencies:
 - aeson
-- acid-state
 - base >= 4.7 && < 5
-- unordered-containers
-- bytestring
-- base64-bytestring
-- http-api-data
-- SHA
-- exceptions
-- mtl
-- conduit
-- wai
-- warp
-- text
-- servant
-- servant-auth
-- stm
-- stm-chans
-- http-types
-- wreq
-- lens
 
 library:
   source-dirs: src
   dependencies:
-  - yaml
-  - safecopy
-  - transformers
+  - SHA
+  - base64-bytestring
+  - bytestring
+  - http-api-data
   - http-types
+  - servant
+  - text
+  - yaml
 
 executables:
   relayeet-server:
@@ -62,10 +47,18 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - http-types
+    - mtl
     - relayeet
     - servant
+    - servant-auth
     - servant-auth-server
     - servant-server
+    - stm
+    - text
+    - wreq
+    - wai
+    - warp
 
   relayeet-client:
     main:                client.hs
@@ -77,7 +70,10 @@ executables:
     dependencies:
     - relayeet
     - servant-client
+    - servant-auth
     - servant-auth-client
+    - stm
+    - text
 
   relayeet-mock-streamer:
     buildable:           false
@@ -88,10 +84,9 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - http-client
     - relayeet
     - servant-client
-    - http-client
-    - servant
 
   relayeet-register-endpoint:
     main:                register-endpoint.hs
@@ -101,17 +96,18 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - relayeet
-    - servant-client
+    - async
+    - authenticate-oauth
+    - bytestring
+    - hashable
     - http-client
     - http-client-tls
-    - authenticate-oauth
+    - mtl
+    - relayeet
+    - servant
     - servant
     - servant-server
-    - wreq
-    - servant
+    - stm
     - stm-containers
-    - async
-    - wai
+    - text
     - warp
-    - hashable
