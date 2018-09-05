@@ -51,7 +51,9 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
     dependencies:
+    - async
     - http-types
     - mtl
     - relayeet
@@ -59,6 +61,7 @@ executables:
     - servant-server
     - stm
     - text
+    - vcache
     - wai
     - warp
 
@@ -69,7 +72,13 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
     dependencies:
+    - bytestring
+    - conduit
+    - conduit-extra
+    - http-conduit
+    - http-types
     - relayeet
     - servant-client
     - stm
@@ -95,6 +104,7 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
     dependencies:
     - http-client
     - relayeet
