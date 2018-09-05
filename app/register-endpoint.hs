@@ -100,7 +100,7 @@ main :: IO ()
 main = do
   Right config <- parseArgs
   env <- Env <$> TMap.newIO <*> TMap.newIO <*> TMap.newIO
-  registerLoop env config `concurrently_` server env config
+  registerLoop env config `race_` server env config
 
 server :: Env -> Config -> IO ()
 server Env{..} cfg@Config{..} = run oauthCallbackPort $ serve @OAuthCallbackAPI Proxy body

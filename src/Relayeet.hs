@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds, DeriveFunctor, DeriveGeneric, DerivingStrategies #-}
-{-# LANGUAGE FlexibleInstances, OverloadedStrings, RecordWildCards       #-}
-{-# LANGUAGE TypeApplications, TypeFamilies, TypeOperators               #-}
-{-# LANGUAGE TypeSynonymInstances, ViewPatterns                          #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards, TypeApplications, TypeFamilies             #-}
+{-# LANGUAGE TypeOperators, TypeSynonymInstances                         #-}
 module Relayeet
   ( Config, Config'(..), Token(..), CRCToken(..)
   , WebhookSignature(..), OAuthVerification(..)
@@ -26,7 +26,8 @@ import qualified Data.Text.Lazy              as LT
 import           Data.Yaml                   (ParseException, decodeFileEither)
 import           GHC.Generics                (Generic)
 import           Network.HTTP.Types.URI      (urlEncode)
-import           Servant.API                 ((:<|>), (:>), ToHttpApiData (..))
+import           Servant.API                 ((:<|>), (:>), MimeRender (..),
+                                              ToHttpApiData (..))
 import           Servant.API                 (FromHttpApiData (..), Get, Header)
 import           Servant.API                 (JSON, NewlineFraming, NoContent)
 import           Servant.API                 (PlainText, Post, QueryParam)
@@ -88,8 +89,10 @@ type OAuthCallbackAPI =
 
 data OAuthVerification = OAuthVerification
 
-type CrcAPI = QueryParam "crc_token" CRCToken :> Get '[PlainText] LT.Text
-type AAAAPI = Header "x-twitter-webhooks-signature" WebhookSignature
+type CrcAPI = "activity"
+           :> QueryParam "crc_token" CRCToken :> Get '[PlainText] WebhookSignature
+type AAAAPI = "activity"
+           :> Header "x-twitter-webhooks-signature" WebhookSignature
            :> ReqBody '[PlainText] LT.Text
            :> Post '[PlainText] NoContent
 type StreamAPI = "stream" :> StreamGet NewlineFraming JSON (StreamGenerator Value)
@@ -99,24 +102,29 @@ newtype Token = Token { runToken :: BS.ByteString }
 
 type API = CrcAPI :<|> AAAAPI :<|> StreamAPI
 
+renderWebhookSig :: WebhookSignature -> BS.ByteString
+renderWebhookSig (WebhookSignature sig) = "sha256=" <> LBS.toStrict (LB64.encode sig)
+
+parseWebhookSig :: BS.ByteString -> Either T.Text WebhookSignature
+parseWebhookSig input =
+  case BS.stripPrefix "sha256=" input of
+    Just code -> either (Left . T.pack) (Right . WebhookSignature . LBS.fromStrict) $ B64.decode code
+    Nothing -> Left "No prefix sha256= found"
+
 instance FromHttpApiData WebhookSignature where
-  parseQueryParam (T.encodeUtf8 -> input) =
-    case BS.stripPrefix "sha256=" input of
-      Just code -> either (Left . T.pack) (Right . WebhookSignature . LBS.fromStrict) $ B64.decode code
-      Nothing -> Left "No prefix sha256= found"
-  parseHeader input =
-    case BS.stripPrefix "sha256=" input of
-      Just code -> either (Left . T.pack) (Right . WebhookSignature . LBS.fromStrict) $ B64.decode code
-      Nothing -> Left "No prefix sha256= found"
+  parseQueryParam = parseWebhookSig . T.encodeUtf8
+  parseHeader = parseWebhookSig
+
+instance MimeRender PlainText WebhookSignature where
+  mimeRender _  = LBS.fromStrict . renderWebhookSig
 
 instance ToHttpApiData WebhookSignature where
-  toQueryParam (WebhookSignature sig) = "sha256=" <> T.decodeUtf8 (LBS.toStrict $ LB64.encode sig)
-  toHeader (WebhookSignature sig) = "sha256=" <> LBS.toStrict (LB64.encode sig)
+  toQueryParam = T.decodeUtf8 . renderWebhookSig
+  toHeader = renderWebhookSig
 
 parseArgs :: IO (Either ParseException Config)
 parseArgs = do
   fp <- fromMaybe "config.yaml" . listToMaybe <$> getArgs
   decodeFileEither @Config fp
-
 
 

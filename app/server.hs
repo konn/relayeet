@@ -25,7 +25,7 @@ crcApp :: Service CrcAPI
 crcApp Nothing = throwError $ err400 {errBody = "No CRC Token Provided"}
 crcApp (Just (CRCToken token)) = do
   secret <- asks $ consumerSecret . config
-  return $ LT.concat ["sha256=", LT.decodeUtf8 $ encodeKeyVal secret token]
+  return $ WebhookSignature $ encodeKeyVal secret token
 
 aaaApp :: Service AAAAPI
 aaaApp Nothing _ = throwError $ err400 {errBody = "No webhook signature provided"}

@@ -19,6 +19,6 @@ main = do
   let env = mkClientEnv man (BaseUrl Http "localhost" 5289 "")
   forM_[1..] $ \i -> do
     let src = Aeson.encode (i :: Integer)
-    let sig = WebhookSignature $ encodeCRC consumerSecret src
+    let sig = WebhookSignature $ encodeKeyVal consumerSecret src
     print =<< runClientM (sendActivity (Just sig) $ LT.decodeUtf8 src) env
-    threadDelay (10)
+    threadDelay 10
