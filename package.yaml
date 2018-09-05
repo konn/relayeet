@@ -55,6 +55,8 @@ executables:
     dependencies:
     - aeson
     - async
+    - bytestring
+    - http-types
     - mtl
     - pwstore-fast
     - relayeet
@@ -108,6 +110,7 @@ executables:
     - http-client
     - relayeet
     - servant-client
+    - text
 
   relayeet-register-endpoint:
     main:                register-endpoint.hs
