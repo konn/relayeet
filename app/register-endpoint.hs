@@ -98,7 +98,7 @@ lookupAccessTokenSecret = fromJust . lookup "oauth_token_secret" . unCredential
 
 main :: IO ()
 main = do
-  Right config <- parseArgs
+  Right config <- parseServerArgs
   env <- Env <$> TMap.newIO <*> TMap.newIO <*> TMap.newIO
   registerLoop env config `race_` server env config
 
