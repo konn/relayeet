@@ -9,7 +9,7 @@ pub struct Sender<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Subscriber<T> {
+pub struct Token<T> {
     senders: Arc<Mutex<Vec<Weak<chan::Sender<T>>>>>,
 }
 
@@ -21,13 +21,13 @@ pub struct Receiver<T> {
 }
 
 #[inline]
-pub fn channel<T: Clone>() -> (Sender<T>, Subscriber<T>) {
+pub fn channel<T: Clone>() -> (Sender<T>, Token<T>) {
     let senders = Arc::new(Mutex::new(vec![]));
     (
         Sender {
             senders: senders.clone(),
         },
-        Subscriber { senders },
+        Token { senders },
     )
 }
 
@@ -43,7 +43,7 @@ impl<T: Clone> Sender<T> {
     }
 }
 
-impl<T> Subscriber<T> {
+impl<T> Token<T> {
     pub fn subscribe(&self) -> Receiver<T> {
         let (sender, receiver) = chan::unbounded();
         let _sender = Arc::new(sender);

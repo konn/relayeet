@@ -1,6 +1,11 @@
-address: 127.0.0.1
-port: 5289
-consumer_key: "API Key here"
-consumer_secret: "API secret key here"
-access_token: "Access Token here"
-access_token_secret: "Acess Token Secret here"
+webhook:
+  address: "127.0.0.1"
+  port: 5289
+  consumer_key: "API Key here"
+  consumer_secret: "API secret key here"
+  access_token: "Access Token here"
+  access_token_secret: "Acess Token Secret here"
+
+stream:
+  address: "127.0.0.1"
+  port: 5290

@@ -3,18 +3,19 @@ extern crate derive_more;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate router;
+extern crate gotham_derive;
 
 extern crate base64;
+extern crate gotham;
 extern crate hmac;
-extern crate iron;
+extern crate hyper;
+extern crate mime;
 extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
+extern crate sha2;
 extern crate subscribe_chan;
 
-use iron::prelude::*;
-use router::Router;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -32,14 +33,26 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Config {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WebhookConfig {
     pub address: String,
     pub port: usize,
     pub consumer_key: String,
     pub consumer_secret: String,
     pub access_token: String,
     pub access_token_secret: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StreamConfig {
+    pub address: String,
+    pub port: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Config {
+    pub webhook: WebhookConfig,
+    pub stream: StreamConfig,
 }
 
 impl Config {
@@ -49,40 +62,55 @@ impl Config {
     }
 }
 
-pub struct Server {
-    config: Config,
-    webhook: Webhook,
-    bearer: Arc<Mutex<Option<String>>>,
-}
-
 pub mod msg;
 pub use self::msg::*;
 
 pub mod webhook;
 pub use self::webhook::*;
 
-pub mod stream;
-pub use self::stream::*;
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
+
+type HmacSha256 = Hmac<Sha256>;
+
+pub struct Server {
+    config: Config,
+    webhook: Webhook,
+    chan_token: chan::Token<Msg>,
+}
+
+#[derive(Serialize, Debug)]
+struct CRCResult {
+    response_token: String,
+}
+
+fn b64_hmac_sha256(key: &[u8], val: &[u8]) -> String {
+    use base64;
+
+    let mut hmac = HmacSha256::new_varkey(key).unwrap();
+    hmac.input(val);
+    base64::encode(hmac.result().code().as_slice())
+}
 
 impl Server {
-    fn handle_activity(req: &mut Request) -> IronResult<Response> {
-        unimplemented!()
+    pub fn new(config: Config) -> Self {
+        let (sender, chan_token) = chan::channel();
+        let webhook = Webhook {
+            sender,
+            config: config.webhook.clone(),
+        };
+        Server {
+            config,
+            webhook,
+            chan_token,
+        }
     }
 
-    fn handle_crc(req: &mut Request) -> IronResult<Response> {
-        unimplemented!()
-    }
+    pub fn run(self) -> Result<()> {
+        let webhook = self.webhook;
 
-    pub fn run(config: Config) -> Result<()> {
-        let listen = format!("{}:{}", config.address, config.port);
-        let (sender, subscriber) = chan::channel();
-        let webhook = Webhook { sender, config };
-        // let router = router!(
-        //     crc_token: get "/activity?crc_token=:crc_token" => Self::handle_crc,
-        //     activity:  post "/activity" =>  webhook,
-        // );
-
-        // // Iron::new(router).http(listen)?
+        let webhook_srv = thread::spawn(move || webhook.run());
+        webhook_srv.join().unwrap();
         Ok(())
     }
 }
