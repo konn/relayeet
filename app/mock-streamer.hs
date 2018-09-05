@@ -13,7 +13,7 @@ import           Servant.Client
 
 main :: IO ()
 main = do
-  Right Config{..} <- parseArgs
+  Right Config{..} <- parseServerArgs
   let sendActivity = client @AAAAPI Proxy
   man <- newManager defaultManagerSettings
   let env = mkClientEnv man (BaseUrl Http "localhost" 5289 "")
@@ -21,4 +21,4 @@ main = do
     let src = Aeson.encode (i :: Integer)
     let sig = WebhookSignature $ encodeKeyVal consumerSecret src
     print =<< runClientM (sendActivity (Just sig) $ LT.decodeUtf8 src) env
-    threadDelay 10
+    threadDelay (10^5)
