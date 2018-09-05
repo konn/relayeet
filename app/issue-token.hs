@@ -13,3 +13,4 @@ main = withGenerator $ \gen -> do
   let toks = loadTokens cache
   runVTx (vcache_space cache) $ modifyPVar' toks (Bearer hashed:)
   putStrLn $ "Registered: " ++ show nonce
+  vcacheSync $ vcache_space cache
