@@ -2,9 +2,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, TypeFamilies #-}
 module Relayeet.BearerAuth (Bearer(..), bearerHandler, loadTokens) where
 import           Control.Monad.IO.Class    (liftIO)
+import           Crypto.PasswordStore
 import           Data.Aeson                (FromJSON (..), withText)
 import           Data.ByteString           (ByteString, stripPrefix)
 import qualified Data.ByteString.Lazy      as LBS
+import           Data.List                 (find)
 import qualified Data.Text.Encoding        as T
 import           Database.VCache           (PVar, VCache, VCacheable,
                                             loadRootPVar)
@@ -38,9 +40,9 @@ bearerHandler cache = mkAuthHandler $ \req -> do
       case stripPrefix "Bearer " autho of
         Just b -> do
           bs <- liftIO $ readPVarIO (loadTokens cache)
-          if Bearer b `elem` bs
-            then return $ Bearer b
-            else report401 "invalid_token"
+          case find (verifyPassword b . getBearer) bs of
+            Just has -> return has
+            _        -> report401 "invalid_token"
         Nothing ->
           throwError err401 { errBody = "No bearer found"
                             , errHeaders = [(hWWWAuthenticate, "Bearer realm=\"stream\"")]

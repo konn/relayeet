@@ -35,6 +35,7 @@ library:
   - http-api-data
   - http-types
   - mtl
+  - pwstore-fast
   - servant
   - servant-server
   - text
@@ -55,6 +56,7 @@ executables:
     - aeson
     - async
     - mtl
+    - pwstore-fast
     - relayeet
     - servant
     - servant-server
@@ -88,6 +90,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - nonce
+    - pwstore-fast
     - relayeet
     - vcache
 
