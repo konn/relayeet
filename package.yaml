@@ -79,18 +79,6 @@ executables:
     - servant-client
     - servant-auth-client
 
-  relayeet-issue:
-    main:                issue.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - relayeet
-    - servant
-    - servant-auth-server
-
   relayeet-mock-streamer:
     buildable:           false
     main:                mock-streamer.hs
