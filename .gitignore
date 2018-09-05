@@ -83,5 +83,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-config/deploy.yaml
+config/server.yaml
+config/client.yaml
+_vcache
 TAGS
+_vcache*
