@@ -1,15 +1,20 @@
-{-# LANGUAGE DataKinds, DeriveFunctor, DeriveGeneric, DerivingStrategies #-}
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards, TypeApplications, TypeFamilies             #-}
-{-# LANGUAGE TypeOperators, TypeSynonymInstances                         #-}
+{-# LANGUAGE DataKinds, DeriveAnyClass, DeriveFunctor, DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies, FlexibleInstances                   #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses       #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeFamilies        #-}
+{-# LANGUAGE TypeOperators, TypeSynonymInstances                     #-}
 module Relayeet
   ( Config, Config'(..), Token(..), CRCToken(..)
   , WebhookSignature(..), OAuthVerification(..)
   , encodeKeyVal, bearerTokenCredential
   , CrcAPI, StreamAPI, AAAAPI, API, OAuthCallbackAPI
-  , parseArgs
+  , parseServerArgs, sharedVCache, ClientConfig(..)
+  , parseClientArgs
+  , module Relayeet.BearerAuth
   ) where
-import           Data.Aeson                  (FromJSON (..), Value, camelTo2)
+import Relayeet.BearerAuth
+
+import           Data.Aeson                  (FromJSON (..), camelTo2)
 import           Data.Aeson                  (defaultOptions)
 import           Data.Aeson                  (fieldLabelModifier)
 import           Data.Aeson                  (genericParseJSON)
@@ -24,12 +29,14 @@ import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import qualified Data.Text.Lazy              as LT
 import           Data.Yaml                   (ParseException, decodeFileEither)
+import           Database.VCache             (VCache, VCacheable, openVCache)
 import           GHC.Generics                (Generic)
 import           Network.HTTP.Types.URI      (urlEncode)
-import           Servant.API                 ((:<|>), (:>), MimeRender (..),
-                                              ToHttpApiData (..))
+import           Servant.API                 ((:<|>), (:>), AuthProtect)
+import           Servant.API                 (MimeRender (..))
+import           Servant.API                 (ToHttpApiData (..))
 import           Servant.API                 (FromHttpApiData (..), Get, Header)
-import           Servant.API                 (JSON, NewlineFraming, NoContent)
+import           Servant.API                 (NewlineFraming, NoContent)
 import           Servant.API                 (PlainText, Post, QueryParam)
 import           Servant.API                 (ReqBody, StreamGenerator)
 import           Servant.API                 (StreamGet)
@@ -95,10 +102,13 @@ type AAAAPI = "activity"
            :> Header "x-twitter-webhooks-signature" WebhookSignature
            :> ReqBody '[PlainText] LT.Text
            :> Post '[PlainText] NoContent
-type StreamAPI = "stream" :> StreamGet NewlineFraming JSON (StreamGenerator Value)
+type StreamAPI = "stream"
+              :> AuthProtect Bearer
+              :> StreamGet NewlineFraming PlainText (StreamGenerator LT.Text)
 
 newtype Token = Token { runToken :: BS.ByteString }
   deriving (Read, Show, Eq, Ord)
+  deriving newtype (VCacheable)
 
 type API = CrcAPI :<|> AAAAPI :<|> StreamAPI
 
@@ -122,9 +132,21 @@ instance ToHttpApiData WebhookSignature where
   toQueryParam = T.decodeUtf8 . renderWebhookSig
   toHeader = renderWebhookSig
 
-parseArgs :: IO (Either ParseException Config)
-parseArgs = do
-  fp <- fromMaybe "config.yaml" . listToMaybe <$> getArgs
-  decodeFileEither @Config fp
+parseServerArgs :: IO (Either ParseException Config)
+parseServerArgs = do
+  fp <- fromMaybe "config/server.yaml" . listToMaybe <$> getArgs
+  decodeFileEither fp
 
+data ClientConfig = ClientConfig { bearer :: Bearer
+                                 , url    :: String
+                                 }
+  deriving (Read, Show, Eq, Ord, Generic)
+  deriving anyclass (FromJSON)
 
+parseClientArgs :: IO (Either ParseException ClientConfig)
+parseClientArgs = do
+  fp <- fromMaybe "config/client.yaml" . listToMaybe <$> getArgs
+  decodeFileEither fp
+
+sharedVCache :: IO VCache
+sharedVCache = openVCache 100 "_vcache"

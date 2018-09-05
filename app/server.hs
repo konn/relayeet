@@ -1,22 +1,23 @@
-{-# LANGUAGE DataKinds, DeriveGeneric, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeApplications #-}
-{-# LANGUAGE TypeOperators                                        #-}
+{-# LANGUAGE DataKinds, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE TypeApplications, TypeOperators               #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 import Relayeet
 
+import           Control.Concurrent
+import           Control.Concurrent.Async
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.Aeson
-import qualified Data.Aeson                as Aeson
-import           Data.Text                 (Text)
-import qualified Data.Text.Lazy.Encoding   as LT
-import           GHC.Generics
-import           Network.HTTP.Types.Status
+import qualified Data.Aeson                       as Aeson
+import           Data.Aeson.Text
+import qualified Data.Text.Lazy.Encoding          as LT
 import           Network.Wai
 import           Network.Wai.Handler.Warp
-import           Network.Wreq              ()
-import           Servant
+import           Servant.Server.Experimental.Auth
+
+import Servant
 
 type Service a = ServerT a (ReaderT Env (ExceptT ServantErr IO))
 
@@ -40,15 +41,15 @@ aaaApp (Just (WebhookSignature sig)) body =
          liftIO $ atomically $ writeTChan chan v
          return NoContent
 
-newtype Users = Users [Text]
-  deriving (Read, Show, Eq, Ord, Generic, ToJSON, FromJSON)
-
 streamApp :: Service StreamAPI
-streamApp = do
-  ch <- asks producer
+streamApp (Bearer b) = do
+  liftIO $ putStrLn $ "Streaming to: " <> show b
+  ch <- liftIO . atomically . dupTChan =<< asks producer
+  let readOr = maybe "" encodeToLazyText . either id id <$>
+               atomically (readTChan ch) `race` do threadDelay (10^7); return Nothing
   return $ StreamGenerator $ \sendFirst sendRest -> do
-    sendFirst =<< atomically (readTChan ch)
-    forever $ sendRest =<< atomically (readTChan ch)
+    sendFirst =<< readOr
+    forever $ sendRest =<< readOr
 
 readerToHandler :: Env -> ReaderT Env (ExceptT ServantErr IO) a -> Handler a
 readerToHandler e act = do
@@ -57,24 +58,20 @@ readerToHandler e act = do
     Right a  -> return a
     Left err -> throwError err
 
-notFound :: Tagged (ReaderT Env (ExceptT ServantErr IO)) Application
-notFound = Tagged $ \req sendResponse -> do
-  putStr "Not found: "
-  print req
-  sendResponse $ responseLBS status404 [("Content-Type", "text/html; charset=UTF-8")] "Not Found"
-
 server :: Env -> Server API
 server env =
-  hoistServer @API Proxy (readerToHandler env) $
+  hoistServerWithContext @API @'[AuthHandler Request Bearer] Proxy Proxy (readerToHandler env) $
   crcApp :<|> aaaApp :<|> streamApp
 
 data Env = Env { config   :: Config
-               , producer :: TChan Value
+               , producer :: TChan (Maybe Value)
                }
 
 main :: IO ()
 main = do
-  Right config@Config{..} <- parseArgs
+  Right config@Config{..} <- parseServerArgs
   producer <- newBroadcastTChanIO
+  vcache   <- sharedVCache
   let env = Env { .. }
-  run port $ serve @API Proxy $ server env
+      cfg = bearerHandler vcache :. EmptyContext
+  run port $ serveWithContext @API Proxy cfg (server env)

@@ -32,10 +32,15 @@ library:
   - SHA
   - base64-bytestring
   - bytestring
+  - directory
   - http-api-data
   - http-types
+  - mtl
   - servant
+  - servant-server
   - text
+  - vcache
+  - wai
   - yaml
 
 executables:
@@ -51,12 +56,9 @@ executables:
     - mtl
     - relayeet
     - servant
-    - servant-auth
-    - servant-auth-server
     - servant-server
     - stm
     - text
-    - wreq
     - wai
     - warp
 
@@ -70,10 +72,20 @@ executables:
     dependencies:
     - relayeet
     - servant-client
-    - servant-auth
-    - servant-auth-client
     - stm
     - text
+
+  relayeet-issue-token:
+    main:                issue-token.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - nonce
+    - relayeet
+    - vcache
 
   relayeet-mock-streamer:
     buildable:           false
