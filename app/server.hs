@@ -47,7 +47,7 @@ streamApp :: Service StreamAPI
 streamApp (Bearer b) = do
   liftIO $ putStrLn $ "Streaming to: " <> show b
   ch <- liftIO . atomically . dupTChan =<< asks producer
-  let readOr = maybe "" encodeToLazyText . either id id <$>
+  let readOr = maybe "\n" encodeToLazyText . either id id <$>
                atomically (readTChan ch) `race` do threadDelay (5*10^6); return Nothing
   return $ StreamGenerator $ \sendFirst sendRest -> do
     sendFirst =<< readOr
