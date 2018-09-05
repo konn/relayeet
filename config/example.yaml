@@ -1,0 +1,15 @@
+address: "127.0.0.1"
+port: 5289
+endpoint: "https://example.com/path/to/activity"
+consumer_key: "App Consumer Key Here"
+consumer_secret: "App Consumer Secret Here"
+access_token: "Default Access Token Here"
+access_token_secret: "Default Access Token Secret Here"
+environment: "dev"
+
+oauth_callback: "https://example.com/path/to/oauth_callback"
+oauth_callback_port: 5290
+
+accounts:
+- mr_konn
+- ex_konn
