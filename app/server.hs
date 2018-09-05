@@ -34,8 +34,10 @@ aaaApp (Just (WebhookSignature sig)) body =
   in case Aeson.decode src of
        Nothing -> throwError $ err400 { errBody = "Input must be a valid JSON" }
        Just v -> do
+         liftIO $ putStr "AAA: " >> print body
          secret <- asks $ consumerSecret . config
-         unless (encodeKeyVal secret src == sig) $
+         unless (encodeKeyVal secret src == sig) $ do
+           liftIO $ putStr "Sign unmatched..."
            throwError $ err400 {errBody = "Webhook signature mismatched"}
          chan <- asks producer
          liftIO $ atomically $ writeTChan chan v
@@ -46,7 +48,7 @@ streamApp (Bearer b) = do
   liftIO $ putStrLn $ "Streaming to: " <> show b
   ch <- liftIO . atomically . dupTChan =<< asks producer
   let readOr = maybe "" encodeToLazyText . either id id <$>
-               atomically (readTChan ch) `race` do threadDelay (10^7); return Nothing
+               atomically (readTChan ch) `race` do threadDelay (5*10^6); return Nothing
   return $ StreamGenerator $ \sendFirst sendRest -> do
     sendFirst =<< readOr
     forever $ sendRest =<< readOr

@@ -32,7 +32,6 @@ loadTokens c = loadRootPVar c "tokens" []
 
 bearerHandler :: VCache -> AuthHandler Request Bearer
 bearerHandler cache = mkAuthHandler $ \req -> do
-  liftIO $ putStrLn $ "Authing: " <> show req
   let hdrs = requestHeaders req
   case lookup hAuthorization hdrs of
     Just autho ->
@@ -42,8 +41,7 @@ bearerHandler cache = mkAuthHandler $ \req -> do
           if Bearer b `elem` bs
             then return $ Bearer b
             else report401 "invalid_token"
-        Nothing -> do
-          liftIO $ putStrLn $ "No bearer: " <> show hdrs
+        Nothing ->
           throwError err401 { errBody = "No bearer found"
                             , errHeaders = [(hWWWAuthenticate, "Bearer realm=\"stream\"")]
                             }
