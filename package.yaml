@@ -23,16 +23,15 @@ ghc-options:
 description:         Please see the README on GitHub at <https://github.com/konn/relayeet#readme>
 
 dependencies:
-- aeson
 - base >= 4.7 && < 5
 
 library:
   source-dirs: src
   dependencies:
+  - aeson
   - SHA
   - base64-bytestring
   - bytestring
-  - directory
   - http-api-data
   - http-types
   - mtl
@@ -53,15 +52,14 @@ executables:
     - -with-rtsopts=-N
     - -O2
     dependencies:
+    - aeson
     - async
-    - http-types
     - mtl
     - relayeet
     - servant
     - servant-server
     - stm
     - text
-    - vcache
     - wai
     - warp
 
@@ -74,15 +72,12 @@ executables:
     - -with-rtsopts=-N
     - -O2
     dependencies:
+    - aeson
     - bytestring
     - conduit
-    - conduit-extra
     - http-conduit
     - http-types
     - relayeet
-    - servant-client
-    - stm
-    - text
 
   relayeet-issue-token:
     main:                issue-token.hs
@@ -106,6 +101,7 @@ executables:
     - -with-rtsopts=-N
     - -O2
     dependencies:
+    - aeson
     - http-client
     - relayeet
     - servant-client
@@ -118,6 +114,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - aeson
     - async
     - authenticate-oauth
     - bytestring

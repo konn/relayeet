@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeApplications #-}
 module Main where
 import Relayeet
 
 import           Conduit
-import           Data.Aeson.Parser
-import qualified Data.ByteString         as BS
-import           Data.Conduit.Attoparsec
+import           Data.Aeson
+import qualified Data.ByteString      as BS
 import           Network.HTTP.Conduit
 import           Network.HTTP.Types
 
@@ -19,6 +18,5 @@ main = do
   runResourceT $ do
     src <- responseBody <$> http req man
     runConduit $ src .| linesUnboundedAsciiC .| filterC (not . BS.null)
-                     -- .| conduitParser json
-                     -- .| mapC snd
+                     .| mapC (decodeStrict' @Value)
                      .| mapM_C (liftIO . print)
