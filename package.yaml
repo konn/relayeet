@@ -127,9 +127,9 @@ executables:
     - hashable
     - http-client
     - http-client-tls
+    - http-types
     - mtl
     - relayeet
-    - servant
     - servant
     - servant-server
     - stm
