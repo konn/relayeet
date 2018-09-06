@@ -39,6 +39,7 @@ library:
   - servant
   - servant-server
   - text
+  - twitter-types
   - vcache
   - wai
   - yaml
@@ -81,7 +82,10 @@ executables:
     - conduit
     - http-conduit
     - http-types
+    - lens
     - relayeet
+    - shelly
+    - text
 
   relayeet-issue-token:
     main:                issue-token.hs

@@ -5,4 +5,5 @@ packages:
 extra-deps: 
 - direct-murmur-hash-1.0.1
 - pwstore-fast-2.4.4
+- twitter-types-0.7.2.2
 - vcache-0.2.6

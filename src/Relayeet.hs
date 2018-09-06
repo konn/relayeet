@@ -13,7 +13,9 @@ module Relayeet
   , parseServerArgs, sharedVCache, ClientConfig(..)
   , parseClientArgs, WithSource(..)
   , module Relayeet.BearerAuth
+  , module Relayeet.Activity
   ) where
+import Relayeet.Activity
 import Relayeet.BearerAuth
 
 import Data.Aeson (FromJSON (..), ToJSON (..), camelTo2)
@@ -158,8 +160,9 @@ parseServerArgs = do
   fp <- fromMaybe "config/server.yaml" . listToMaybe <$> getArgs
   decodeFileEither fp
 
-data ClientConfig = ClientConfig { bearer :: Bearer
-                                 , url    :: String
+data ClientConfig = ClientConfig { bearer  :: Bearer
+                                 , url     :: String
+                                 , targets :: [T.Text]
                                  }
   deriving (Read, Show, Eq, Ord, Generic)
   deriving anyclass (FromJSON)
