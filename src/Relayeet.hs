@@ -1,16 +1,17 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE DataKinds, DeriveAnyClass, DeriveFunctor, DeriveGeneric     #-}
 {-# LANGUAGE DerivingStrategies, ExtendedDefaultRules, FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses           #-}
-{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeFamilies            #-}
-{-# LANGUAGE TypeOperators, TypeSynonymInstances                         #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ScopedTypeVariables     #-}
+{-# LANGUAGE TypeFamilies, TypeOperators, TypeSynonymInstances           #-}
 module Relayeet
   ( Config, Config'(..), Token(..), CRCToken(..)
   , WebhookSignature(..), OAuthVerification(..)
   , encodeKeyVal, bearerTokenCredential
   , CrcAPI, StreamAPI, AAAAPI, API, OAuthCallbackAPI
   , parseServerArgs, sharedVCache, ClientConfig(..)
-  , parseClientArgs
+  , parseClientArgs, WithSource(..)
   , module Relayeet.BearerAuth
   ) where
 import Relayeet.BearerAuth
@@ -18,7 +19,7 @@ import Relayeet.BearerAuth
 import Data.Aeson (FromJSON (..), ToJSON (..), camelTo2)
 
 import           Data.Aeson                  (defaultOptions, (.=))
-import           Data.Aeson                  (fieldLabelModifier)
+import           Data.Aeson                  (Value, fieldLabelModifier)
 import           Data.Aeson                  (genericParseJSON, object)
 import qualified Data.ByteString.Base64      as B64
 import qualified Data.ByteString.Base64.Lazy as LB64
@@ -43,6 +44,7 @@ import           Servant.API                 (NewlineFraming, NoContent)
 import           Servant.API                 (PlainText, Post, QueryParam)
 import           Servant.API                 (ReqBody, StreamGenerator)
 import           Servant.API                 (StreamGet)
+import           Servant.API.ContentTypes    (MimeUnrender (..))
 import           System.Environment          (getArgs)
 
 default (T.Text)
@@ -109,12 +111,21 @@ data OAuthVerification = OAuthVerification
 type CrcAPI = "activity"
            :> QueryParam "crc_token" CRCToken :> Get '[JSON] WebhookSignature
 type AAAAPI = "activity"
-           :> Header "x-twitter-webhooks-signature" WebhookSignature
-           :> ReqBody '[PlainText] LT.Text
+           :> Header "X-Twitter-Webhooks-Signature" WebhookSignature
+           :> ReqBody '[JSON] (WithSource Value)
            :> Post '[PlainText] NoContent
 type StreamAPI = "stream"
               :> AuthProtect Bearer
               :> StreamGet NewlineFraming PlainText (StreamGenerator LT.Text)
+
+data WithSource a = WithSource { rawSource :: LBS.ByteString, payload :: a }
+  deriving (Read, Show, Eq, Ord)
+
+instance {-# OVERLAPPING #-} MimeUnrender JSON a => MimeUnrender JSON (WithSource a) where
+  mimeUnrender pxy src =
+    case mimeUnrender pxy src of
+      Left err -> Left err
+      Right a  -> Right $ WithSource src a
 
 newtype Token = Token { runToken :: BS.ByteString }
   deriving (Read, Show, Eq, Ord)

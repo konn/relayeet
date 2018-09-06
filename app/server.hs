@@ -10,10 +10,8 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.Aeson
-import qualified Data.Aeson                       as Aeson
 import           Data.Aeson.Text
 import qualified Data.ByteString.Lazy.Char8       as LBS
-import qualified Data.Text.Lazy.Encoding          as LT
 import           Network.HTTP.Types.Status
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -31,19 +29,15 @@ crcApp (Just (CRCToken token)) = do
 
 aaaApp :: Service AAAAPI
 aaaApp Nothing _ = throwError $ err400 {errBody = "No webhook signature provided"}
-aaaApp (Just (WebhookSignature sig)) body =
-  let src = LT.encodeUtf8 body
-  in case Aeson.decode src of
-       Nothing -> throwError $ err400 { errBody = "Input must be a valid JSON" }
-       Just v -> do
-         liftIO $ putStr "AAA: " >> print body
-         secret <- asks $ consumerSecret . config
-         unless (encodeKeyVal secret src == sig) $ do
-           liftIO $ putStr "Sign unmatched..."
-           throwError $ err400 {errBody = "Webhook signature mismatched"}
-         chan <- asks producer
-         liftIO $ atomically $ writeTChan chan v
-         return NoContent
+aaaApp (Just (WebhookSignature sig)) (WithSource src val) = do
+  liftIO $ putStr "AAA: " >> print src
+  secret <- asks $ consumerSecret . config
+  unless (encodeKeyVal secret src == sig) $ do
+    liftIO $ putStr "Sign unmatched..."
+    throwError $ err400 {errBody = "Webhook signature mismatched"}
+  chan <- asks producer
+  liftIO $ atomically $ writeTChan chan (Just val)
+  return NoContent
 
 streamApp :: Service StreamAPI
 streamApp (Bearer b) = do
