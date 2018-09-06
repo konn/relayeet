@@ -9,19 +9,20 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Data.Aeson               as Ae
-import qualified Data.ByteString.Char8    as BS
-import           Data.Hashable            (Hashable)
+import           Data.Aeson                as Ae
+import qualified Data.ByteString.Char8     as BS
+import           Data.Hashable             (Hashable)
 import           Data.Maybe
-import           Data.Text                (Text)
-import qualified Data.Text.Encoding       as T
-import           GHC.Generics             (Generic)
-import           Network.HTTP.Client      hiding (Proxy, queryString)
+import           Data.Text                 (Text)
+import qualified Data.Text.Encoding        as T
+import           GHC.Generics              (Generic)
+import           Network.HTTP.Client       hiding (Proxy, queryString)
 import           Network.HTTP.Client.TLS
+import           Network.HTTP.Types.Header
 import           Network.Wai.Handler.Warp
-import           Servant                  hiding (header)
-import qualified STMContainers.Map        as TMap
-import           Web.Authenticate.OAuth   as OA
+import           Servant                   hiding (header)
+import qualified STMContainers.Map         as TMap
+import           Web.Authenticate.OAuth    as OA
 
 default (Text)
 
@@ -61,11 +62,27 @@ aaaEndpoint Config{..} =
 registerWebhook :: Config -> IO ()
 registerWebhook cfg@Config{..} = do
   man <- newManager tlsManagerSettings
-  let Just url = parseRequest $ mconcat [aaaEndpoint cfg, "/webhooks.json" ]
+  let url = parseRequest_ $ mconcat [aaaEndpoint cfg, "/webhooks.json" ]
       params = [("url", Just $ T.encodeUtf8 endpoint)]
-  req <- signOAuth (configToOAuth cfg) (configToCred cfg) (setQueryString params url)
-  void $ httpLbs req man
+  cfm <- httpLbs url { requestHeaders = (hAuthorization, "Bearer " <> fromJust oauthBearer) : requestHeaders url } man
 
+  let there = maybe False (any @[] ((== endpoint) . whUrl)) $
+              decode' $ responseBody cfm
+  if there
+    then putStrLn "Webhook already exists; skipped."
+    else do
+    req <- signOAuth (configToOAuth cfg) (configToCred cfg) (setQueryString params url { method = "POST" })
+    print =<< httpLbs req man
+
+data Webhook = Webhook { whId               :: Text
+                       , whUrl              :: Text
+                       , whValid            :: Bool
+                       , whCreatedTimestamp :: Text
+                       }
+  deriving (Read, Show, Eq, Ord, Generic)
+
+instance FromJSON Webhook where
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' . drop 2 }
 
 data Env = Env { tempCredDic :: TMap String Credential
                , tokToUser   :: TMap BS.ByteString String
@@ -87,9 +104,10 @@ registerUser Env{..} cfg@Config{..} account = do
                      , authorizeUrl' (\_ _ -> paras) oauth tmpCreds
                      ]
   cred <- atomically $ lookupTMap' account accTokDic
+  print cred
   let Just req = parseRequest $ aaaEndpoint cfg ++ "/subscriptions.json"
   req' <- signOAuth oauth cred req { method = "POST", requestBody = "" }
-  void $ httpLbs req' man
+  print =<< httpLbs req' man
 
 lookupAccessToken :: Credential -> BS.ByteString
 lookupAccessToken = fromJust . lookup "oauth_token" . unCredential
