@@ -7,6 +7,7 @@ import Relayeet
 
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Aeson                as Ae
@@ -20,6 +21,8 @@ import           Network.HTTP.Client       hiding (Proxy, queryString)
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header
 import           Network.Wai.Handler.Warp
+import           Network.Wreq              (FormParam, auth, defaults,
+                                            oauth1Auth, postWith)
 import           Servant                   hiding (header)
 import qualified STMContainers.Map         as TMap
 import           Web.Authenticate.OAuth    as OA
@@ -72,7 +75,7 @@ registerWebhook cfg@Config{..} = do
     then putStrLn "Webhook already exists; skipped."
     else do
     req <- signOAuth (configToOAuth cfg) (configToCred cfg) (setQueryString params url { method = "POST" })
-    print =<< httpLbs req man
+    void $ httpLbs req man
 
 data Webhook = Webhook { whId               :: Text
                        , whUrl              :: Text
@@ -104,10 +107,10 @@ registerUser Env{..} cfg@Config{..} account = do
                      , authorizeUrl' (\_ _ -> paras) oauth tmpCreds
                      ]
   cred <- atomically $ lookupTMap' account accTokDic
-  print cred
-  let Just req = parseRequest $ aaaEndpoint cfg ++ "/subscriptions.json"
-  req' <- signOAuth oauth cred req { method = "POST", requestBody = "" }
-  print =<< httpLbs req' man
+  let reqUrl = aaaEndpoint cfg ++ "/subscriptions.json"
+      (accTok, accTokSec) = (lookupAccessToken cred, lookupAccessTokenSecret cred)
+      opts = defaults & auth ?~ oauth1Auth consumerKey consumerSecret accTok accTokSec
+  void $ postWith opts reqUrl ([] :: [FormParam])
 
 lookupAccessToken :: Credential -> BS.ByteString
 lookupAccessToken = fromJust . lookup "oauth_token" . unCredential

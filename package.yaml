@@ -128,6 +128,7 @@ executables:
     - http-client
     - http-client-tls
     - http-types
+    - lens
     - mtl
     - relayeet
     - servant
@@ -136,3 +137,4 @@ executables:
     - stm-containers
     - text
     - warp
+    - wreq
