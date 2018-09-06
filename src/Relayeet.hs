@@ -1,8 +1,9 @@
-{-# LANGUAGE DataKinds, DeriveAnyClass, DeriveFunctor, DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies, FlexibleInstances                   #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses       #-}
-{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeFamilies        #-}
-{-# LANGUAGE TypeOperators, TypeSynonymInstances                     #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# LANGUAGE DataKinds, DeriveAnyClass, DeriveFunctor, DeriveGeneric     #-}
+{-# LANGUAGE DerivingStrategies, ExtendedDefaultRules, FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses           #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeFamilies            #-}
+{-# LANGUAGE TypeOperators, TypeSynonymInstances                         #-}
 module Relayeet
   ( Config, Config'(..), Token(..), CRCToken(..)
   , WebhookSignature(..), OAuthVerification(..)
@@ -14,10 +15,11 @@ module Relayeet
   ) where
 import Relayeet.BearerAuth
 
-import           Data.Aeson                  (FromJSON (..), camelTo2)
-import           Data.Aeson                  (defaultOptions)
+import Data.Aeson (FromJSON (..), ToJSON (..), camelTo2)
+
+import           Data.Aeson                  (defaultOptions, (.=))
 import           Data.Aeson                  (fieldLabelModifier)
-import           Data.Aeson                  (genericParseJSON)
+import           Data.Aeson                  (genericParseJSON, object)
 import qualified Data.ByteString.Base64      as B64
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Char8       as BS
@@ -28,11 +30,12 @@ import           Data.Maybe                  (fromMaybe, listToMaybe)
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import qualified Data.Text.Lazy              as LT
+import qualified Data.Text.Lazy.Encoding     as LT
 import           Data.Yaml                   (ParseException, decodeFileEither)
 import           Database.VCache             (VCache, VCacheable, openVCache)
 import           GHC.Generics                (Generic)
 import           Network.HTTP.Types.URI      (urlEncode)
-import           Servant.API                 ((:<|>), (:>), AuthProtect)
+import           Servant.API                 ((:<|>), (:>), AuthProtect, JSON)
 import           Servant.API                 (MimeRender (..))
 import           Servant.API                 (ToHttpApiData (..))
 import           Servant.API                 (FromHttpApiData (..), Get, Header)
@@ -41,6 +44,8 @@ import           Servant.API                 (PlainText, Post, QueryParam)
 import           Servant.API                 (ReqBody, StreamGenerator)
 import           Servant.API                 (StreamGet)
 import           System.Environment          (getArgs)
+
+default (T.Text)
 
 data Config' tok = Config { address           :: String
                           , port              :: Int
@@ -53,6 +58,7 @@ data Config' tok = Config { address           :: String
                           , accounts          :: NonEmpty String
                           , oauthCallback     :: tok
                           , oauthCallbackPort :: Int
+                          , oauthBearer       :: Maybe tok
                           }
                  deriving (Read, Show, Eq, Ord, Generic, Functor)
 type Config = Config' BS.ByteString
