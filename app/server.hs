@@ -30,7 +30,6 @@ crcApp (Just (CRCToken token)) = do
 aaaApp :: Service AAAAPI
 aaaApp Nothing _ = throwError $ err400 {errBody = "No webhook signature provided"}
 aaaApp (Just (WebhookSignature sig)) (WithSource src val) = do
-  liftIO $ putStr "AAA: " >> print src
   secret <- asks $ consumerSecret . config
   unless (encodeKeyVal secret src == sig) $ do
     liftIO $ putStr "Sign unmatched..."
