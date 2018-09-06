@@ -1,1 +1,3 @@
 bearer: "Client Top-secret Bearer issued by relayed-issue-token here"
+url:    "https://example.com/path/to/stream"
+targets: []

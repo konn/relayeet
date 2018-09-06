@@ -10,6 +10,4 @@ environment: "dev"
 oauth_callback: "https://example.com/path/to/oauth_callback"
 oauth_callback_port: 5290
 
-accounts:
-- mr_konn
-- ex_konn
+accounts: []
