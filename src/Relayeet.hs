@@ -79,8 +79,12 @@ bearerTokenCredential Config{..} =
 encodeKeyVal :: BS.ByteString -> LBS.ByteString -> LBS.ByteString
 encodeKeyVal key val = bytestringDigest $ hmacSha256 (LBS.fromStrict key) val
 
-newtype WebhookSignature = WebhookSignature LBS.ByteString
-  deriving (Read, Show, Eq, Ord)
+newtype WebhookSignature = WebhookSignature { responseToken :: LBS.ByteString }
+  deriving (Read, Show, Eq, Ord, Generic)
+
+instance ToJSON WebhookSignature where
+  toJSON (WebhookSignature sig) =
+    object [ "response_token" .= ("sha256=" <> LT.decodeUtf8 (LB64.encode sig)) ]
 
 newtype CRCToken  = CRCToken { runCRCToken :: LBS.ByteString }
   deriving (Read, Show, Eq, Ord)
@@ -97,7 +101,7 @@ type OAuthCallbackAPI =
 data OAuthVerification = OAuthVerification
 
 type CrcAPI = "activity"
-           :> QueryParam "crc_token" CRCToken :> Get '[PlainText] WebhookSignature
+           :> QueryParam "crc_token" CRCToken :> Get '[JSON] WebhookSignature
 type AAAAPI = "activity"
            :> Header "x-twitter-webhooks-signature" WebhookSignature
            :> ReqBody '[PlainText] LT.Text
