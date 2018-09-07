@@ -6,27 +6,44 @@ import Relayeet
 
 import           Conduit
 import           Control.Concurrent
+import           Control.Concurrent.Async
+import           Control.Concurrent.STM
+import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Loops
 import           Data.Aeson
-import qualified Data.ByteString      as BS
+import qualified Data.ByteString          as BS
 import           Data.Maybe
-import qualified Data.Text            as T
+import qualified Data.Text                as T
+import qualified Data.Text.Lazy           as LT
+import           Data.Text.Lazy.Builder
+import           HTMLEntities.Decoder
 import           Network.HTTP.Conduit
-import           Network.HTTP.Types   (hAuthorization)
+import           Network.HTTP.Types       (hAuthorization)
 import           Shelly
 
-default (T.Text)
+default (T.Text, Int)
 
 main :: IO ()
 main = do
   Right cfg@ClientConfig{..} <- parseClientArgs
+  updated <- newTVarIO True
+  forever $ bracket (do atomically $ writeTVar updated True ;async $ notifyLoop cfg updated) cancel $ \_ -> do
+    whileM_ (atomically $ swapTVar updated False) $ threadDelay (15 * 10^6)
+    putStrLn "No input after 15secs. Reconnecting..."
+    threadDelay (10^6)
+
+notifyLoop :: ClientConfig -> TVar Bool -> IO ()
+notifyLoop cfg@ClientConfig{..} upd = do
   let auth = (hAuthorization, "Bearer " <> getBearer bearer)
       Just req0 = parseRequest url
       req = req0 { requestHeaders = auth : requestHeaders req0 }
   man <- newManager tlsManagerSettings
   runResourceT $ do
     src <- responseBody <$> http req man
-    runConduit $ src .| linesUnboundedAsciiC .| filterC (not . BS.null)
+    runConduit $ src .| linesUnboundedAsciiC
+                     .| mapMC (\a -> do liftIO $ atomically $ writeTVar upd True; return a)
+                     .| filterC (not . BS.null)
                      .| concatMapC (decodeStrict' @Activity)
                      .| concatMapC (filterEvents cfg)
                      .| mapC renderNotify
@@ -53,11 +70,14 @@ data NotifyEvent = RT User Status
 defTimeout :: Maybe Int
 defTimeout = Just 5
 
+decodeEntities :: T.Text -> T.Text
+decodeEntities = LT.toStrict . toLazyText . htmlEncodedText
+
 renderNotify :: NotifyEvent -> Notification
 renderNotify (RT u s@Status{..}) =
   let appIconImage = getIcon u
       title = mconcat ["RT'ed by @", userScreenName u]
-      message = statusText
+      message = decodeEntities statusText
       onSuccess = Just $ tweetUrl s
       subtitle = Just $ "@" <> userScreenName statusUser
       timeout = defTimeout
@@ -65,7 +85,7 @@ renderNotify (RT u s@Status{..}) =
 renderNotify (Mentioned src _ s@Status{..}) =
   let appIconImage = getIcon src
       title = mconcat [ "@", userScreenName src, " mentioned"]
-      message = statusText
+      message = decodeEntities statusText
       timeout = Nothing
       subtitle = Nothing
       onSuccess = Just $ tweetUrl s
@@ -74,7 +94,7 @@ renderNotify (Liked Favorite{..}) =
   let appIconImage = getIcon favUser
       title = mconcat [ "Liked by @", userScreenName favUser ]
       subtitle = Just $ userScreenName $ statusUser favFavoritedStatus
-      message = statusText favFavoritedStatus
+      message = decodeEntities $ statusText favFavoritedStatus
       timeout = defTimeout
       onSuccess = Just $ tweetUrl favFavoritedStatus
   in Notification{..}

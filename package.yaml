@@ -78,13 +78,17 @@ executables:
     - -O2
     dependencies:
     - aeson
+    - async
     - bytestring
     - conduit
+    - html-entities
     - http-conduit
     - http-types
     - lens
+    - monad-loops
     - relayeet
     - shelly
+    - stm
     - text
 
   relayeet-issue-token:
