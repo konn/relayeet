@@ -13,6 +13,7 @@ import           Control.Monad
 import           Control.Monad.Loops
 import           Data.Aeson
 import qualified Data.ByteString          as BS
+import qualified Data.HashMap.Strict      as HM
 import           Data.Maybe
 import qualified Data.Text                as T
 import qualified Data.Text.Lazy           as LT
@@ -63,6 +64,10 @@ data NotifyEvent = RT User Status
                  | Mentioned { mentionedFrom :: User
                              , mentionedTo   :: T.Text
                              , mentionStatus :: Status }
+                 | DMed { dmedFrom :: SimpleUser
+                        , dmedTo   :: T.Text
+                        , dmedText :: T.Text
+                        }
                  | Liked Favorite
                  | Followed { follwedFrom :: User, followedTo :: User }
                  deriving (Show, Eq)
@@ -90,6 +95,14 @@ renderNotify (Mentioned src _ s@Status{..}) =
       subtitle = Nothing
       onSuccess = Just $ tweetUrl s
   in Notification{..}
+renderNotify (DMed src _ text) =
+  let appIconImage = getSimpleIcon src
+      title = mconcat [ "@", usrScreenName src, " mentioned"]
+      message = decodeEntities text
+      timeout = Nothing
+      subtitle = Nothing
+      onSuccess = Just $ "https://twitter.com/direct_messages/create/" <> usrScreenName src
+  in Notification{..}
 renderNotify (Liked Favorite{..}) =
   let appIconImage = getIcon favUser
       title = mconcat [ "Liked by @", userScreenName favUser ]
@@ -114,6 +127,9 @@ tweetUrl Status{..} = mconcat
 
 getIcon :: User -> URIString
 getIcon = fromMaybe defaultIcon . userProfileImageURL
+
+getSimpleIcon :: SimpleUser -> URIString
+getSimpleIcon = fromMaybe defaultIcon . usrProfileImageUrl
 
 defaultIcon :: URIString
 defaultIcon = "https://abs.twimg.com/sticky/default_profile_images/default_profile.png"
@@ -151,6 +167,16 @@ relevantFollows ClientConfig{..} Follow{..} = do
   guard $ userName followTarget `elem` targets
   return $ Followed followSource followTarget
 
+relevantDMs :: ClientConfig -> HM.HashMap T.Text App -> HM.HashMap T.Text SimpleUser
+            -> DirectMessageEvent -> Maybe NotifyEvent
+relevantDMs ClientConfig{..} _apps usrs DME{..} = do
+  let MessageCreate{..} = dmeMessageCreate
+  dmedFrom <- HM.lookup mcSenderId usrs
+  dmedTo <- usrScreenName <$> HM.lookup (runSingleton mcTarget) usrs
+  guard $ dmedTo `elem` targets
+  let dmedText = dmdText mcMessageData
+  return DMed{..}
+
 filterEvents :: ClientConfig -> Activity -> [NotifyEvent]
 filterEvents cfg TweetCreateEvents{tweetCreateEvents = stats} =
   mapMaybe (relevantStatus cfg) stats
@@ -158,4 +184,6 @@ filterEvents cfg FavoriteEvents{favoriteEvents = favs} =
   mapMaybe (relevantFavs cfg) favs
 filterEvents cfg FollowEvents{followEvents = fs} =
   mapMaybe (relevantFollows cfg) fs
+filterEvents cfg DirectMessageEvents{directMessageEvents = evs, apps, users} =
+  mapMaybe (relevantDMs cfg (fromMaybe HM.empty apps) (fromMaybe HM.empty users)) evs
 filterEvents _ _ = []

@@ -32,8 +32,10 @@ library:
   - aeson
   - base64-bytestring
   - bytestring
+  - deriving-compat
   - http-api-data
   - http-types
+  - unordered-containers
   - mtl
   - pwstore-fast
   - servant
@@ -87,6 +89,7 @@ executables:
     - shelly
     - stm
     - text
+    - unordered-containers
 
   relayeet-issue-token:
     main:                issue-token.hs
