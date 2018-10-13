@@ -1,10 +1,10 @@
 {-# LANGUAGE DataKinds, DeriveGeneric, DerivingStrategies, FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, KindSignatures                     #-}
-{-# LANGUAGE ScopedTypeVariables, TypeApplications                          #-}
+{-# LANGUAGE ScopedTypeVariables, TypeApplications, RecordWildCards         #-}
 module Relayeet.Activity
   ( Activity(..), Favorite(..), Follow(..), Block(..), Mute(..)
   , UserEvent(..), AppID(..), UserID(..), App(..), DirectMessageEvent(..)
-  , SimpleUser(..), Singleton(..), DirectMessageData(..)
+  , SimpleUser(..), simpleUser, Singleton(..), DirectMessageData(..)
   , MessageCreate(..)
   , module Web.Twitter.Types) where
 import Web.Twitter.Types
@@ -25,6 +25,7 @@ import           Data.Text           (Text)
 import qualified Data.Text           as T
 import           GHC.Generics        (Generic, Rep)
 import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
+import           Data.Time.Format    (formatTime, defaultTimeLocale)
 
 data SimpleUser = SimpleUser { usrScreenName           :: Text
                              , usrProfileImageUrl      :: Maybe Text
@@ -42,6 +43,24 @@ data SimpleUser = SimpleUser { usrScreenName           :: Text
                              , usrFollowersCount       :: Integer
                              }
   deriving (Show, Eq, Generic)
+
+simpleUser :: User -> SimpleUser
+simpleUser User{..} =
+  SimpleUser{ usrScreenName = userScreenName
+            , usrProfileImageUrl = userProfileImageURL
+            , usrProfileImageUrlHttps = userProfileImageURLHttps 
+            , usrProtected = userProtected
+            , usrLocation = userLocation
+            , usrUrl = userURL
+            , usrVerified = userVerified
+            , usrStatusesCount = fromIntegral userStatusesCount
+            , usrCreatedTimestamp = T.pack $ formatTime defaultTimeLocale "%c" userCreatedAt 
+            , usrName =  userScreenName
+            , usrId = T.pack $ show userId
+            , usrFriendsCount = fromIntegral userFriendsCount
+            , usrDescription  = userDescription
+            , usrFollowersCount = fromIntegral userFollowersCount
+            }
 
 instance ToJSON SimpleUser where
   toJSON = genericToJSON appOpts
@@ -65,10 +84,7 @@ data Activity = TweetCreateEvents { forUserId         :: Text
                                     , apps :: Maybe (HashMap Text App)
                                     , users :: Maybe (HashMap Text SimpleUser)
                                     }
-              -- | DirectMessageIndicateTypingEvents
-              -- | DirectMessageMarkReadEvents
-              -- | TweetDeleteEvents
-  deriving (Show, Eq, Generic)
+              deriving (Show, Eq, Generic)
 
 data App = App { appUrl  :: Text
                , appName :: Text
@@ -96,7 +112,7 @@ instance (KnownSymbol lab, ToJSON a) => ToJSON (Singleton lab a) where
 instance (KnownSymbol lab, FromJSON a) => FromJSON (Singleton lab a) where
   parseJSON =
     let lab = T.pack (symbolVal (Proxy @lab))
-    in withObject ("Singleton object with label " ++ (show lab)) $ \obj -> do
+    in withObject ("Singleton object with label " ++ show lab) $ \obj -> do
       when (length obj /= 1) $  fail "Object is not singleton!"
       Singleton <$> obj .: lab
 

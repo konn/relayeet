@@ -47,8 +47,10 @@ notifyLoop cfg@ClientConfig{..} upd = do
                      .| filterC (not . BS.null)
                      .| concatMapC (decodeStrict' @Activity)
                      .| concatMapC (filterEvents cfg)
+                     .| filterC (unmuted mute)
                      .| mapC renderNotify
                      .| mapM_C (liftIO . void . forkIO . notify)
+
 
 data Notification = Notification { appIconImage :: T.Text
                                  , title        :: T.Text
@@ -71,6 +73,22 @@ data NotifyEvent = RT User Status
                  | Liked Favorite
                  | Followed { follwedFrom :: User, followedTo :: User }
                  deriving (Show, Eq)
+
+notifySender :: NotifyEvent -> SimpleUser
+notifySender (RT u _) = simpleUser u
+notifySender (Mentioned u _ _) = simpleUser u
+notifySender (DMed u _ _) = u
+notifySender (Liked Favorite{..}) = simpleUser favUser
+notifySender (Followed f _) = simpleUser f
+
+notifyText :: NotifyEvent -> T.Text
+notifyText (Mentioned _ _ Status{..}) =  statusText
+notifyText _ = ""
+
+unmuted :: MuteSettings -> NotifyEvent -> Bool
+unmuted MuteSettings{..} evt = 
+  usrScreenName (notifySender evt) `notElem` muteUsers
+  && all (`T.isInfixOf` notifyText evt) muteKeywords
 
 defTimeout :: Maybe Int
 defTimeout = Just 5

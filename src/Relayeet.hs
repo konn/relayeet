@@ -11,7 +11,7 @@ module Relayeet
   , encodeKeyVal, bearerTokenCredential
   , CrcAPI, StreamAPI, AAAAPI, API, OAuthCallbackAPI
   , parseServerArgs, sharedVCache, ClientConfig(..)
-  , parseClientArgs, WithSource(..)
+  , parseClientArgs, WithSource(..), MuteSettings(..)
   , module Relayeet.BearerAuth
   , module Relayeet.Activity
   ) where
@@ -20,9 +20,9 @@ import Relayeet.BearerAuth
 
 import Data.Aeson (FromJSON (..), ToJSON (..), camelTo2)
 
-import           Data.Aeson                  (defaultOptions, (.=))
+import           Data.Aeson                  (defaultOptions, (.=), genericToJSON)
 import           Data.Aeson                  (Value, fieldLabelModifier)
-import           Data.Aeson                  (genericParseJSON, object)
+import           Data.Aeson                  (genericParseJSON, object, Options)
 import qualified Data.ByteString.Base64      as B64
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Char8       as BS
@@ -160,9 +160,24 @@ parseServerArgs = do
   fp <- fromMaybe "config/server.yaml" . listToMaybe <$> getArgs
   decodeFileEither fp
 
+data MuteSettings = MuteSettings { muteKeywords :: [T.Text] 
+                                 , muteUsers    :: [T.Text]
+                                 }
+  deriving (Read, Show, Eq, Ord, Generic)
+
+msOpts :: Options
+msOpts = defaultOptions { fieldLabelModifier = camelTo2 '_' . drop 4 }
+
+instance ToJSON MuteSettings where
+  toJSON = genericToJSON msOpts
+
+instance FromJSON MuteSettings where
+  parseJSON = genericParseJSON msOpts
+
 data ClientConfig = ClientConfig { bearer  :: Bearer
                                  , url     :: String
                                  , targets :: [T.Text]
+                                 , mute    :: MuteSettings
                                  }
   deriving (Read, Show, Eq, Ord, Generic)
   deriving anyclass (FromJSON)
