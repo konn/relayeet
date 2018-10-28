@@ -42,14 +42,19 @@ bearerHandler cache = mkAuthHandler $ \req -> do
           bs <- liftIO $ readPVarIO (loadTokens cache)
           case find (verifyPassword b . getBearer) bs of
             Just has -> return has
-            _        -> report401 "invalid_token"
-        Nothing ->
+            _        -> do
+              liftIO $ putStrLn $ "Invalid Token: " <> show b
+              report401 "invalid_token"
+        Nothing -> do
+          liftIO $ putStrLn $ "Invalid Auth Header: " <> show autho
           throwError err401 { errBody = "No bearer found"
                             , errHeaders = [(hWWWAuthenticate, "Bearer realm=\"stream\"")]
                             }
-    Nothing -> throwError err401 { errHeaders = [(hWWWAuthenticate, "Bearer realm=\"stream\"")]
-                                 , errBody = "You have to be authorized"
-                                 }
+    Nothing -> do
+      liftIO $ putStrLn "No Authorization Header."
+      throwError err401 { errHeaders = [(hWWWAuthenticate, "Bearer realm=\"stream\"")]
+                        , errBody = "You have to be authorized"
+                        }
 
 report401 :: ByteString -> Handler a
 report401 str = withWWWAuth err401 { errBody = LBS.fromStrict str } str
