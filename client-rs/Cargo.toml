@@ -1,6 +1,15 @@
 [package]
-name = "relayeet-client-rs"
+name = "relayeet-client"
 version = "0.1.0"
 authors = ["Hiromi ISHII <konn.jinro@gmail.com>"]
 
 [dependencies]
+"serde" = "*"
+"serde_json" = "*"
+"serde_yaml" = "*"
+"serde_derive" = "*"
+"futures" = "*"
+"actix-web" = {version = "0.7.13", features = ["ssl"]}
+"tokio-serde-json" = "*"
+"bytes" = "*"
+"openssl" = "*"
