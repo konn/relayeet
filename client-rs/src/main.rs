@@ -30,7 +30,7 @@ fn main() {
             .send()
             .map_err(|_| ())
             .and_then(|rsp| {
-                ReadJson::<_, Value>::new(SerdeStream(rsp.payload()))
+                ReadJson::<_, Value>::new(SerdeStream(rsp.readlines()))
                     .for_each(|j| {
                         println!("{:?}", j);
                         Ok(())
