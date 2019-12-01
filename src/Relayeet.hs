@@ -4,7 +4,7 @@
 {-# LANGUAGE DerivingStrategies, ExtendedDefaultRules, FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses           #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ScopedTypeVariables     #-}
-{-# LANGUAGE TypeFamilies, TypeOperators, TypeSynonymInstances           #-}
+{-# LANGUAGE TypeFamilies, TypeOperators                                 #-}
 module Relayeet
   ( Config, Config'(..), Token(..), CRCToken(..)
   , WebhookSignature(..), OAuthVerification(..)
@@ -20,9 +20,10 @@ import Relayeet.BearerAuth
 
 import Data.Aeson (FromJSON (..), ToJSON (..), camelTo2)
 
-import           Data.Aeson                  (defaultOptions, (.=), genericToJSON)
+import           Data.Aeson                  (defaultOptions, genericToJSON,
+                                              (.=))
 import           Data.Aeson                  (Value, fieldLabelModifier)
-import           Data.Aeson                  (genericParseJSON, object, Options)
+import           Data.Aeson                  (Options, genericParseJSON, object)
 import qualified Data.ByteString.Base64      as B64
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Char8       as BS
@@ -44,7 +45,7 @@ import           Servant.API                 (ToHttpApiData (..))
 import           Servant.API                 (FromHttpApiData (..), Get, Header)
 import           Servant.API                 (NewlineFraming, NoContent)
 import           Servant.API                 (PlainText, Post, QueryParam)
-import           Servant.API                 (ReqBody, StreamGenerator)
+import           Servant.API                 (ReqBody, SourceIO)
 import           Servant.API                 (StreamGet)
 import           Servant.API.ContentTypes    (MimeUnrender (..))
 import           System.Environment          (getArgs)
@@ -118,7 +119,7 @@ type AAAAPI = "activity"
            :> Post '[PlainText] NoContent
 type StreamAPI = "stream"
               :> AuthProtect Bearer
-              :> StreamGet NewlineFraming PlainText (StreamGenerator LT.Text)
+              :> StreamGet NewlineFraming PlainText (SourceIO LT.Text)
 
 data WithSource a = WithSource { rawSource :: LBS.ByteString, payload :: a }
   deriving (Read, Show, Eq, Ord)
@@ -128,6 +129,9 @@ instance {-# OVERLAPPING #-} MimeUnrender JSON a => MimeUnrender JSON (WithSourc
     case mimeUnrender pxy src of
       Left err -> Left err
       Right a  -> Right $ WithSource src a
+
+instance ToJSON a => ToJSON (WithSource a) where
+  toJSON = toJSON . payload
 
 newtype Token = Token { runToken :: BS.ByteString }
   deriving (Read, Show, Eq, Ord)
@@ -160,7 +164,7 @@ parseServerArgs = do
   fp <- fromMaybe "config/server.yaml" . listToMaybe <$> getArgs
   decodeFileEither fp
 
-data MuteSettings = MuteSettings { muteKeywords :: [T.Text] 
+data MuteSettings = MuteSettings { muteKeywords :: [T.Text]
                                  , muteUsers    :: [T.Text]
                                  }
   deriving (Read, Show, Eq, Ord, Generic)

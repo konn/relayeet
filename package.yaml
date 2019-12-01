@@ -65,6 +65,8 @@ executables:
     - relayeet
     - servant
     - servant-server
+    - servant-conduit
+    - conduit
     - stm
     - wai
     - warp
@@ -106,7 +108,7 @@ executables:
     - vcache
 
   relayeet-mock-streamer:
-    buildable:           false
+    buildable:           true
     main:                mock-streamer.hs
     source-dirs:         app
     ghc-options:

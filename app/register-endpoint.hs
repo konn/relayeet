@@ -24,7 +24,7 @@ import           Network.Wai.Handler.Warp
 import           Network.Wreq              (FormParam, auth, defaults,
                                             oauth1Auth, postWith)
 import           Servant                   hiding (header)
-import qualified STMContainers.Map         as TMap
+import qualified StmContainers.Map         as TMap
 import           Web.Authenticate.OAuth    as OA
 
 default (Text)

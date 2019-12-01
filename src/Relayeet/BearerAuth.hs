@@ -13,9 +13,9 @@ import           Database.VCache           (PVar, VCache, VCacheable,
 import           Database.VCache           (readPVarIO)
 import           Network.HTTP.Types.Header (hAuthorization, hWWWAuthenticate)
 import           Network.Wai               (Request, requestHeaders)
-import           Servant                   (Handler, ServantErr, err401,
-                                            errBody, errHeaders)
-import           Servant                   (throwError)
+import           Servant                   (Handler, err401, errBody,
+                                            errHeaders)
+import           Servant                   (ServerError, throwError)
 
 import Servant.API.Experimental.Auth    (AuthProtect)
 import Servant.Server.Experimental.Auth
@@ -59,6 +59,6 @@ bearerHandler cache = mkAuthHandler $ \req -> do
 report401 :: ByteString -> Handler a
 report401 str = withWWWAuth err401 { errBody = LBS.fromStrict str } str
 
-withWWWAuth :: ServantErr -> ByteString -> Handler a
+withWWWAuth :: ServerError -> ByteString -> Handler a
 withWWWAuth err str =
   throwError err  { errHeaders = [(hWWWAuthenticate, "Bearer error=\"" <> str <> "\"")] }

@@ -1,0 +1,12 @@
+resolver: nightly-2019-01-04
+packages:
+- .
+ 
+extra-deps:
+- direct-murmur-hash-1.0.1
+- primitive-extras-0.7.1
+- pwstore-fast-2.4.4
+- stm-containers-1.1.0.2
+- stm-hamt-1.2.0.2
+- twitter-types-0.7.2.2
+- vcache-0.2.6

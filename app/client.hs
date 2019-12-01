@@ -75,18 +75,18 @@ data NotifyEvent = RT User Status
                  deriving (Show, Eq)
 
 notifySender :: NotifyEvent -> SimpleUser
-notifySender (RT u _) = simpleUser u
-notifySender (Mentioned u _ _) = simpleUser u
-notifySender (DMed u _ _) = u
+notifySender (RT u _)             = simpleUser u
+notifySender (Mentioned u _ _)    = simpleUser u
+notifySender (DMed u _ _)         = u
 notifySender (Liked Favorite{..}) = simpleUser favUser
-notifySender (Followed f _) = simpleUser f
+notifySender (Followed f _)       = simpleUser f
 
 notifyText :: NotifyEvent -> T.Text
 notifyText (Mentioned _ _ Status{..}) =  statusText
-notifyText _ = ""
+notifyText _                          = ""
 
 unmuted :: MuteSettings -> NotifyEvent -> Bool
-unmuted MuteSettings{..} evt = 
+unmuted MuteSettings{..} evt =
   usrScreenName (notifySender evt) `notElem` muteUsers
   && all (`T.isInfixOf` notifyText evt) muteKeywords
 
@@ -154,7 +154,7 @@ defaultIcon = "https://abs.twimg.com/sticky/default_profile_images/default_profi
 
 notify :: Notification -> IO ()
 notify Notification{..} = shelly $ do
-  resl <- T.strip <$> cmd "alerter" "-appIcon" appIconImage
+  resl <- T.strip <$> cmd "terminal-notifier" "-appIcon" appIconImage
       "-title"   title
       "-message" message
       (concat [ ["-timeout", T.pack $ show limit] | limit <- maybeToList timeout ])

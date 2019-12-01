@@ -4,7 +4,8 @@
 module Main where
 import Relayeet
 
-import           Control.Concurrent
+import           Conduit                          (repeatMC, yield)
+import           Control.Concurrent               hiding (yield)
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM
 import           Control.Monad.Except
@@ -15,11 +16,13 @@ import qualified Data.ByteString.Lazy.Char8       as LBS
 import           Network.HTTP.Types.Status
 import           Network.Wai
 import           Network.Wai.Handler.Warp
+import           Servant.Conduit
 import           Servant.Server.Experimental.Auth
+import           Servant.Types.SourceT
 
 import Servant
 
-type Service a = ServerT a (ReaderT Env (ExceptT ServantErr IO))
+type Service a = ServerT a (ReaderT Env (ExceptT ServerError IO))
 
 crcApp :: Service CrcAPI
 crcApp Nothing = throwError $ err400 {errBody = "No CRC Token Provided"}
@@ -42,13 +45,11 @@ streamApp :: Service StreamAPI
 streamApp (Bearer b) = do
   liftIO $ putStrLn $ "Streaming to: " <> show b
   ch <- liftIO . atomically . dupTChan =<< asks producer
-  let readOr = maybe "" encodeToLazyText . either id id <$>
+  let readOr = either id id <$>
                atomically (readTChan ch) `race` do threadDelay (5*10^6); return Nothing
-  return $ StreamGenerator $ \sendFirst sendRest -> do
-    sendFirst =<< readOr
-    forever $ sendRest =<< readOr
+  return $ conduitToSourceIO $ repeatMC $ encodeToLazyText <$> readOr
 
-readerToHandler :: Env -> ReaderT Env (ExceptT ServantErr IO) a -> Handler a
+readerToHandler :: Env -> ReaderT Env (ExceptT ServerError IO) a -> Handler a
 readerToHandler e act = do
   exc <- liftIO $ runExceptT $ runReaderT act e
   case exc of
@@ -64,7 +65,7 @@ data Env = Env { config   :: Config
                , producer :: TChan (Maybe Value)
                }
 
-notFound :: Tagged (ReaderT Env (ExceptT ServantErr IO)) Application
+notFound :: Tagged (ReaderT Env (ExceptT ServerError IO)) Application
 notFound = Tagged $ \req sendResponse -> do
   liftIO $ putStrLn $ "Not Found: " ++ show req
   sendResponse $ responseLBS status404 [] $ "Not Found: " <> LBS.pack (show $ rawPathInfo req)

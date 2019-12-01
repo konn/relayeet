@@ -17,8 +17,9 @@ main = do
   let sendActivity = client @AAAAPI Proxy
   man <- newManager defaultManagerSettings
   let env = mkClientEnv man (BaseUrl Http "localhost" 5289 "")
-  forM_[1..] $ \i -> do
+  forM_ [1..] $ \i -> do
     let src = Aeson.encode (i :: Integer)
-    let sig = WebhookSignature $ encodeKeyVal consumerSecret src
-    print =<< runClientM (sendActivity (Just sig) $ LT.decodeUtf8 src) env
+        withSrc = WithSource src $ Aeson.toJSON i
+        sig = WebhookSignature $ encodeKeyVal consumerSecret src
+    print =<< runClientM (sendActivity (Just sig) withSrc) env
     threadDelay (10^5)

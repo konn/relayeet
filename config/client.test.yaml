@@ -1,0 +1,9 @@
+bearer: "7RSsI3Whvo-F5Gii82lGQapJ"
+url:    "http://127.0.0.1:5289/stream"
+targets:
+- mr_konn
+- ex_konn
+
+mute:
+  keywords: []
+  users: []

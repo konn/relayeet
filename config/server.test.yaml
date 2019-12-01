@@ -1,0 +1,16 @@
+address: "127.0.0.1"
+port: 5289
+endpoint: "http://127.0.0.1:5290/relayeet/activity"
+consumer_key: "gkV3ceesJsRinY3QnuqcPdR2v"
+consumer_secret: "FXwm25FaKlGXneP3GCSUvcPkRc1S4WxGdYpmxOdAQ4WgeOd2l8"
+access_token: "5965172-SK5hDtQI5lHZFl0LmKn1TjxuX97E2JfQK6BBrHpQfL"
+access_token_secret: "vWUUMQInJDT6txpXDiwRWxhmuGV0o8jcXnX9gQaQlD6By"
+environment: "dev"
+
+oauth_callback: "https://hooks.konn-san.com/relayeet/oauth_callback"
+oauth_callback_port: 5290
+oauth_bearer: "AAAAAAAAAAAAAAAAAAAAAAyR8QAAAAAAF2el9PhxegNlMyrzWarkz7RejyY%3DCanbwyQyU1V7Z5Vg7K6Ir1y6fnPMyuIWzTCg7N9VJrBNYk60jl"
+
+accounts:
+- mr_konn
+- ex_konn
