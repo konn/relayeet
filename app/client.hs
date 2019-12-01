@@ -154,7 +154,7 @@ defaultIcon = "https://abs.twimg.com/sticky/default_profile_images/default_profi
 
 notify :: Notification -> IO ()
 notify Notification{..} = shelly $ do
-  resl <- T.strip <$> cmd "terminal-notifier" "-appIcon" appIconImage
+  resl <- T.strip <$> cmd "alerter" "-appIcon" appIconImage
       "-title"   title
       "-message" message
       (concat [ ["-timeout", T.pack $ show limit] | limit <- maybeToList timeout ])
