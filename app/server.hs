@@ -4,7 +4,7 @@
 module Main where
 import Relayeet
 
-import           Conduit                          (repeatMC, yield)
+import           Conduit                          (repeatMC)
 import           Control.Concurrent               hiding (yield)
 import           Control.Concurrent.Async
 import           Control.Concurrent.STM
@@ -18,7 +18,6 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant.Conduit
 import           Servant.Server.Experimental.Auth
-import           Servant.Types.SourceT
 
 import Servant
 

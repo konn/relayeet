@@ -166,6 +166,7 @@ parseServerArgs = do
 
 data MuteSettings = MuteSettings { muteKeywords :: [T.Text]
                                  , muteUsers    :: [T.Text]
+                                 , muteStatusId :: [StatusId]
                                  }
   deriving (Read, Show, Eq, Ord, Generic)
 

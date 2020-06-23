@@ -1,0 +1,14 @@
+cradle:
+  stack:
+    - path: "src"
+      component: "relayeet:lib"
+    - path: "app/client.hs"
+      component: "relayeet:exe:relayeet-client"
+    - path: "app/issue-token.hs"
+      component: "relayeet:exe:relayeet-issue-token"
+    - path: "app/mock-streamer.hs"
+      component: "relayeet:exe:relayeet-mock-streamer"
+    - path: "app/register-endpoint.hs"
+      component: "relayeet:exe:relayeet-register-endpoint"
+    - path: "app/server.hs"
+      component: "relayeet:exe:relayeet-server"

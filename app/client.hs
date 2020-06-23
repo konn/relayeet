@@ -74,6 +74,11 @@ data NotifyEvent = RT User Status
                  | Followed { follwedFrom :: User, followedTo :: User }
                  deriving (Show, Eq)
 
+notifyStatus :: NotifyEvent -> Maybe Status
+notifyStatus (RT _ s)                      = Just s
+notifyStatus Mentioned {mentionStatus = s} = Just s
+notifyStatus _                             = Nothing
+
 notifySender :: NotifyEvent -> SimpleUser
 notifySender (RT u _)             = simpleUser u
 notifySender (Mentioned u _ _)    = simpleUser u
@@ -89,6 +94,7 @@ unmuted :: MuteSettings -> NotifyEvent -> Bool
 unmuted MuteSettings{..} evt =
   usrScreenName (notifySender evt) `notElem` muteUsers
   && all (`T.isInfixOf` notifyText evt) muteKeywords
+  && maybe True ((`notElem` muteStatusId) . statusId) (notifyStatus evt)
 
 defTimeout :: Maybe Int
 defTimeout = Just 5
