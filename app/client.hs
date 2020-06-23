@@ -77,6 +77,7 @@ data NotifyEvent = RT User Status
 notifyStatus :: NotifyEvent -> Maybe Status
 notifyStatus (RT _ s)                      = Just s
 notifyStatus Mentioned {mentionStatus = s} = Just s
+notifyStatus (Liked fav)                   = Just $ favFavoritedStatus fav
 notifyStatus _                             = Nothing
 
 notifySender :: NotifyEvent -> SimpleUser
