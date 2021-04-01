@@ -1,0 +1,4 @@
+[submodule "vcache"]
+	path = vcache
+	url = https://github.com/konn/haskell-vcache.git
+	branch = MonadFail

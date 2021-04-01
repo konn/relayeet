@@ -5,34 +5,6 @@
 
 packages:
 - completed:
-    hackage: pwstore-fast-2.4.4@sha256:9b6a37510d8b9f37f409a8ab3babac9181afcaaa3fce8ba1c131a7ed3de30698,1351
-    pantry-tree:
-      size: 270
-      sha256: ff4a44ede62515efe5cd366a5803f7183c811c4a0cf56eea88da94181c4844c0
-  original:
-    hackage: pwstore-fast-2.4.4
-- completed:
-    hackage: stm-containers-1.1.0.4@sha256:f83a683357b6e3b1dda3e70d2077a37224ed534df1f74c4e11f3f6daa7945c5b,3248
-    pantry-tree:
-      size: 761
-      sha256: 059c5a2d657d392aca0a887648f57380d6321734dc8879c056a44d4414308ac6
-  original:
-    hackage: stm-containers-1.1.0.4
-- completed:
-    hackage: twitter-types-0.9.0@sha256:7b37caf764a5a63ee2bde2cfc57d589b3e9554b5d9038d325457265d1613d642,1514
-    pantry-tree:
-      size: 1811
-      sha256: d84fec79f6a6afc791c5ffeb3afa7cd9a933d3d3c5f66c869f3480ccfd8be0c7
-  original:
-    hackage: twitter-types-0.9.0
-- completed:
-    hackage: vcache-0.2.6@sha256:8a1eeea09884cb6e9ac1f1da4696bf2e56cd46811310c434d397415d3d544a11,2128
-    pantry-tree:
-      size: 2103
-      sha256: 605b9b7b4e17fce9446c7bc4532455ca9990463dd8843f84228ecc491fc73e95
-  original:
-    hackage: vcache-0.2.6
-- completed:
     hackage: direct-murmur-hash-1.0.1@sha256:126017f23ae100489ef9fa712f761b86aed065bfdcfbfc5aede866f522c48d92,1095
     pantry-tree:
       size: 225
@@ -40,36 +12,22 @@ packages:
   original:
     hackage: direct-murmur-hash-1.0.1
 - completed:
-    hackage: stm-hamt-1.2.0.4@sha256:7957497c022554b7599e790696d1a3e56359ad99e5da36a251894c626ca1f60a,3970
+    hackage: pwstore-fast-2.4.4@sha256:9b6a37510d8b9f37f409a8ab3babac9181afcaaa3fce8ba1c131a7ed3de30698,1351
     pantry-tree:
-      size: 1009
-      sha256: d9a8be48da86bd4a2ba9d52ea29b9a74f1b686d439ba1bbfba04ab1a002391da
+      size: 270
+      sha256: ff4a44ede62515efe5cd366a5803f7183c811c4a0cf56eea88da94181c4844c0
   original:
-    hackage: stm-hamt-1.2.0.4
+    hackage: pwstore-fast-2.4.4
 - completed:
-    hackage: primitive-0.7.0.0@sha256:ee352d97cc390d8513530029a2213a95c179a66c406906b18d03702c1d9ab8e5,3416
+    hackage: twitter-types-0.10.1@sha256:5ebed648815b96f54b0b1d3e86b3443d8900a86ce3ab885d71fb8c1ba5aacbc0,1568
     pantry-tree:
-      size: 3221
-      sha256: ad604aab554e26d78561ad1288636b52c2e88b40e1fb37594efc96465a0ce68c
+      size: 2921
+      sha256: 5edadc18ca570a7e53ef3b78415b7df64b429ee4374acfd604ee09a1d3bb10d6
   original:
-    hackage: primitive-0.7.0.0
-- completed:
-    hackage: primitive-extras-0.8@sha256:fca0310150496867f5b9421fe1541ecda87fae17eae44885a29f9c52dd00c8ff,2963
-    pantry-tree:
-      size: 1105
-      sha256: e7c1d26202b80d1fca2ef780ec7fe76ede1275f4d9a996c6d44c08d8de1c45db
-  original:
-    hackage: primitive-extras-0.8
-- completed:
-    hackage: primitive-unlifted-0.1.2.0@sha256:9c3df73af54ed19fb3f4874da19334863cc414b22e578e27b5f52beeac4a60dd,1360
-    pantry-tree:
-      size: 420
-      sha256: cc6ffb1b48aa3f514c107f5188d5d5beb4e61a4232a81be7025b54f9be66a837
-  original:
-    hackage: primitive-unlifted-0.1.2.0
+    hackage: twitter-types-0.10.1
 snapshots:
 - completed:
-    size: 525663
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/14.yaml
-    sha256: 6edc48df46eb8bf7b861e98dd30d021a92c2e1820c9bb6528aac5d997b0e14ef
-  original: lts-14.14
+    size: 563099
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/3.yaml
+    sha256: 1e9f31ec160a144f796bc49b91dfc2bab5eca88b1dcc93da569108febaf5b382
+  original: lts-17.3
